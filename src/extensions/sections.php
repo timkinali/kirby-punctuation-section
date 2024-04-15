@@ -6,7 +6,11 @@ return [
         [
             'props' => [
                 'fieldsets' => fn ($value = []) => $value,
-                'clipboard' => fn ($value = false) => $value
+                'clipboard' => fn ($value = false) => $value,
+                'open' => fn ($value = false) => $value,
+                /* 'instructions' => function ($value = 'hej') {
+                    return $value;
+                } */
             ]
         ]
     )

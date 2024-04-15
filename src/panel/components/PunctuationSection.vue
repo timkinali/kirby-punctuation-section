@@ -9,11 +9,23 @@ export default {
       type: Boolean,
       default: false,
     },
+    open: {
+      type: Boolean,
+      default: false,
+    },
+ /*    instructions: {
+      type: Array
+    }, */
+
   },
 
   data() {
     return {
       label: null,
+      instructions: {
+        'sv_SE': 'Klicka på ett märke för att kopiera',
+        'en': 'Click a mark to copy it to clipboard'
+      },
       text: [],
       theme: null,
       activeChar: null,
@@ -23,15 +35,19 @@ export default {
     };
   },
 
-  async created() {
-    const response = await this.load();
-    this.label = response.label;
-    this.theme = response.theme || "none";
-    this.text = this.fieldsets.map((i) => ({
-      ...i,
-      label: this.t(i.label),
-      help: i.help ? this.t(i.help) : false,
-    }));
+  created() {
+    this.load().then(response => {
+      //const response = await this.load();
+      this.label = response.label;
+      this.theme = response.theme || "none";
+      this.instructions = this.t(this.instructions);
+      //console.log(response.instructions);
+      this.text = this.fieldsets.map((i) => ({
+        ...i,
+        label: this.t(i.label),
+        help: i.help ? this.t(i.help) : false,
+      }));
+    });
   },
 
   mounted() {
@@ -56,6 +72,7 @@ export default {
 
   methods: {
     t(value) {
+      console.log(value['sv_SE']);
       if (!value || typeof value === "string") return value;
       return value[this.$panel.translation.code] ?? Object.values(value)[0];
     },
@@ -111,6 +128,7 @@ export default {
           // from a content script running on `http:`-pages, only `https:`-pages.
           // Setting a browser flag can allow HTTP pages to be interpreted as secure.
           await navigator.clipboard.writeText(char);
+          window.panel.notification.success("Copied to clipboard!");
         } catch (error) {
           const message = `Failed writing "${char}" to clipboard. The Clipboard API is only available to secure contexts (HTTPS).`;
           console.error(message);
@@ -157,37 +175,43 @@ export default {
 </script>
 
 <template>
-  <k-section :label="label">
-    <k-box :theme="theme">
-      <div class="container kps-space-y-1">
-        <div v-for="(category, index) in text" :key="index" class="group">
-          <div class="kps-flex kps-items-center kps-gap-2">
-            <span>{{ category.label }}:</span>
-            <k-button-group class="kps-gap-1">
-              <k-button
-                v-for="(char, charIndex) in category.chars"
-                :key="charIndex"
-                variant="filled"
-                size="xs"
-                :class="[
-                  index === categoryIndex &&
-                    char === activeChar &&
-                    'kps-outline kps-outline-2 kps-outline-[var(--color-focus)]',
-                ]"
-                @click="writeToClipboard(char, index)"
-              >
-                {{ char }}
-              </k-button>
-            </k-button-group>
-          </div>
+ <k-section>
 
-          <k-text
-            v-if="category.help"
-            :html="category.help"
-            class="kps-text-[var(--color-text-dimmed)]"
-          />
-        </div>
-      </div>
+    <k-box :theme="theme" align="start" class="kps-box">
+      <details :open="open" class="kps-details">
+        <summary class="k-label k-section-label kps-summary"><span class="kps-label">{{ label }}</span> </summary>
+          <k-box :text="instructions" theme="none" icon="copy" class="k-help" style="margin: var(--spacing-2) 0 var(--spacing-4)"/>
+
+          <div class="container kps-space-y-1">
+            <div v-for="(category, index) in text" :key="index" class="group">
+              <div class="kps-flex kps-items-center kps-gap-2">
+                <span>{{ category.label }}:</span>
+                <k-button-group class="kps-gap-1">
+                  <k-button
+                    v-for="(char, charIndex) in category.chars"
+                    :key="charIndex"
+                    variant="filled"
+                    size="xs"
+                    :class="[
+                      index === categoryIndex &&
+                        char === activeChar &&
+                        'kps-outline kps-outline-2 kps-outline-[var(--color-focus)]',
+                    ]"
+                    @click="writeToClipboard(char, index)"
+                  >
+                    {{ char }}
+                  </k-button>
+                </k-button-group>
+              </div>
+
+              <k-text
+                v-if="category.help"
+                :html="category.help"
+                class="kps-text-[var(--color-text-dimmed)]"
+              />
+            </div>
+          </div>
+      </details>
     </k-box>
   </k-section>
 </template>
